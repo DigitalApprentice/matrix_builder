@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leds System Matrix Builder & Editor</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0a0816 0%, #120e2b 100%);
+            --panel-bg: rgba(255, 255, 255, 0.03);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent: #8b5cf6;
+            --accent-glow: rgba(139, 92, 246, 0.4);
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --cell-bg-empty: rgba(255, 255, 255, 0.05);
+            --cell-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #a78bfa, #8b5cf6, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.05em;
+        }
+
+        p.subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 2.5rem;
+            max-width: 1400px;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* Editor Section */
+        .editor-section {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 750px;
+        }
+
+        /* Dimensions Settings */
+        .settings-bar {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .setting-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .setting-input {
+            width: 70px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.4rem 0.6rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            text-align: center;
+            outline: none;
+            transition: all 0.15s ease;
+        }
+
+        .setting-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        button.primary {
+            background: var(--accent);
+            border-color: transparent;
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+
+        button.primary:hover {
+            background: #7c3aed;
+            box-shadow: 0 6px 20px var(--accent-glow);
+        }
+
+        /* Grid */
+        .grid-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.75rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100%;
+            max-width: 100%;
+            overflow: auto;
+        }
+
+        .matrix-grid {
+            display: grid;
+            gap: 3px;
+            justify-content: center;
+            margin: 0 auto;
+        }
+
+        .cell {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            border: 1px solid var(--cell-border);
+            background: var(--cell-bg-empty);
+            transition: all 0.15s ease;
+        }
+
+        .cell input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            outline: none;
+            pointer-events: none;
+        }
+
+        /* Hide HTML5 arrows */
+        .cell input::-webkit-outer-spin-button,
+        .cell input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .cell input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        .cell:focus-within {
+            box-shadow: 0 0 0 2px var(--accent);
+            border-color: transparent;
+        }
+
+        .cell.filled {
+            box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .cell.duplicate {
+            animation: pulse-red 1.5s infinite;
+            border-color: var(--accent-red) !important;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 0); }
+        }
+
+        /* Grid Headers */
+        .grid-header-cell {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            user-select: none;
+            opacity: 0.6;
+        }
+
+        .grid-header-cell.corner {
+            border: none;
+            background: transparent;
+        }
+
+        .grid-header-cell.col-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 2px;
+        }
+
+        .grid-header-cell.row-header {
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            justify-content: flex-end;
+            padding-right: 6px;
+            margin-right: 2px;
+        }
+
+        .cell.drag-over {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 8px var(--accent-glow);
+            transform: scale(1.05);
+        }
+
+        .cell.selected {
+            border: 2px dashed #f59e0b !important;
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+        }
+
+        /* Sidebar Output Section */
+        .output-section {
+            flex: 1;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: blur(20px);
+        }
+
+        .card h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #f1f5f9;
+        }
+
+        .code-block {
+            position: relative;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            overflow-x: auto;
+            max-height: 250px;
+        }
+
+        .code-block.hex {
+            max-height: 120px;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            color: #cbd5e1;
+            white-space: pre;
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
+
+        .copy-btn.success {
+            background: var(--accent-green);
+            color: #0f172a;
+        }
+
+        /* Info / validation details */
+        .validation-card {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-pill.valid {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+
+        .status-pill.error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.75rem;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        /* Checklist Alert */
+        .missing-list {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #fca5a5;
+            line-height: 1.5;
+        }
+
+        .success-banner {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #34d399;
+            text-align: center;
+        }
+
+        /* Tooltip style helper info */
+        .helper-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.75rem;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        footer {
+            margin-top: 3rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Leds System Matrix Builder</h1>
+        <p class="subtitle">Design, validate, and vertically mirror your custom LED matrices</p>
+    </header>
+
+    <div class="container">
+        <!-- Editor panel -->
+        <div class="editor-section">
+            <!-- Dimensions Bar -->
+            <div class="settings-bar">
+                <div class="setting-group">
+                    <label for="widthInput">Width</label>
+                    <input type="number" id="widthInput" class="setting-input" value="18" min="1" max="50" onchange="resizeGrid()">
+                </div>
+                <div class="setting-group">
+                    <label for="heightInput">Height</label>
+                    <input type="number" id="heightInput" class="setting-input" value="14" min="1" max="50" onchange="resizeGrid()">
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <button class="primary" onclick="mirrorVertical()" title="Mirror grid vertically">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H7M19 12H5M17 19H7"/></svg>
+                    Mirror Vertical
+                </button>
+                <button id="btnSym" onclick="loadDefaultTemplate('symmetric')" title="Load 14x18 Symmetric matrix (unmirrored)">
+                    Load Symmetric (14x18)
+                </button>
+                <button id="btnMirr" onclick="loadDefaultTemplate('mirrored')" title="Load 14x18 Symmetric mirrored matrix">
+                    Load Mirrored (14x18)
+                </button>
+                <button onclick="clearGrid()" title="Reset all cells to -1">
+                    Clear Grid
+                </button>
+                <button id="btnUndo" onclick="undo()" disabled style="opacity: 0.4; border-color: rgba(255, 255, 255, 0.1);" title="Undo last action (Ctrl+Z)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/></svg>
+                    Undo
+                </button>
+                <button id="btnClearSel" onclick="clearSelection()" title="Deselect all selected cells" style="display: none; border-color: rgba(245, 158, 11, 0.2); background: rgba(245, 158, 11, 0.05); color: #f59e0b;">
+                    Clear Selection
+                </button>
+            </div>
+
+            <div class="grid-container">
+                <div class="matrix-grid" id="matrixGrid">
+                    <!-- Javascript will generate cells dynamically -->
+                </div>
+            </div>
+
+            <div class="helper-text">
+                 <b>Ctrl + Click</b> to select multiple cells, drag selection to move. <b>Arrow Keys</b> to navigate.
+            </div>
+        </div>
+
+        <!-- Sidebar / Outputs -->
+        <div class="output-section">
+            <!-- Validation and Stats -->
+            <div class="card validation-card">
+                <h2>
+                    Layout Validation
+                    <span id="validationStatus" class="status-pill valid">All Valid</span>
+                </h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Mapped LEDs</div>
+                        <div class="stat-value" id="statMapped">0 / 0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Max LED Index</div>
+                        <div class="stat-value" id="statMaxIndex">-1</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Grid Size</div>
+                        <div class="stat-value" id="statGridDim">18 × 14</div>
+                    </div>
+                </div>
+                
+                <div id="validationWarning" style="color: var(--accent-red); font-size: 0.85rem; margin-top: 0.75rem; display: none;">
+                    ⚠️ Warning: Duplicate LED numbers found (highlighted in red).
+                </div>
+
+                <div id="missingContainer" class="missing-list" style="display: none;">
+                    <b>Missing LED numbers:</b> <span id="missingIndices">None</span>
+                </div>
+
+                <div id="successBanner" class="success-banner" style="display: none;">
+                    Checklist Complete! All LEDs 0 to <span id="successMax">0</span> are mapped exactly once.
+                </div>
+            </div>
+
+            <!-- Code Output 1: Python Tuple -->
+            <div class="card">
+                <h2>
+                    Python Matrix Tuple (LED1_MATRIX)
+                    <button class="copy-btn" onclick="copyCode('pythonCode', this)">Copy</button>
+                </h2>
+                <div class="code-block">
+                    <code id="pythonCode">LED1_MATRIX = (...)</code>
+                </div>
+            </div>
+
+            <!-- Code Output 2: index_table hex string -->
+            <div class="card">
+                <h2>
+                    index_table Hex String
+                    <button class="copy-btn" onclick="copyCode('hexCode', this)">Copy</button>
+                </h2>
+                <div class="code-block hex">
+                    <code id="hexCode">ffff...</code>
+                </div>
+            </div>
+
+            <!-- Import Card -->
+            <div class="card">
+                <h2>Import Matrix from Python Tuple</h2>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+                    <textarea id="importInput" placeholder="Paste your LED1_MATRIX = ((...)) tuple here..." style="width: 100%; height: 90px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 0.6rem; color: #cbd5e1; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; resize: vertical; outline: none;"></textarea>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                        <button class="primary" onclick="importFromText()" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Import Tuple</button>
+                        <span id="importFeedback" style="font-size: 0.8rem; color: var(--accent-green); display: none;"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Leds System Exhibition Tool
+    </footer>
+
+    <script>
+        let gridWidth = 18;
+        let gridHeight = 14;
+        const gridCells = [];
+        const selectedCells = new Set();
+        const undoStack = [];
+        let focusStateBackup = null;
+        
+        // 14x18 symmetric layouts in valid JS array syntax
+        const unmirroredTemplate = [
+            [-1, -1, -1, -1, -1,  9, -1, 10, 11, 12, -1, 13, -1, -1, -1, -1, -1, -1],
+            [-1, -1, -1, -1,  8, -1, -1, -1, -1, -1, -1, -1, 14, -1, -1, -1, -1, -1],
+            [-1, -1,  6,  7, -1, -1, -1, -1, -1, -1, -1, -1, -1, 15, 16, -1, -1, -1],
+            [-1,  5, -1, 61, 62, 63, -1, -1, -1, -1, -1, 69, 70, 71, -1, 17, -1, -1],
+            [ 4, -1, -1, -1, -1, -1, 64, 65, 66, 67, 68, -1, -1, -1, -1, -1, 18, -1],
+            [ 3, -1, 60, 59, -1, -1, -1, -1, -1, -1, -1, -1, 50, 49, -1, -1, 19, -1],
+            [ 2, -1, -1, -1, 58, 57, -1, -1, -1, -1, 52, 51, -1, -1, -1, -1, 20, -1],
+            [-1, -1, -1, -1, -1, -1, 56, 55, 54, 53, -1, -1, -1, -1, -1, -1, -1, -1],
+            [ 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 21, -1],
+            [ 0, -1, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, -1, 22, -1],
+            [-1, 35, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 23, -1, -1],
+            [-1, -1, 34, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, 25, 24, -1, -1, -1],
+            [-1, -1, -1, -1, 32, -1, -1, -1, -1, -1, -1, -1, 26, -1, -1, -1, -1, -1],
+            [-1, -1, -1, -1, -1, 31, -1, 30, 29, 28, -1, 27, -1, -1, -1, -1, -1, -1]
+        ];
+
+        const mirroredTemplate = [
+            [-1, -1, -1, -1, -1, 31, -1, 30, 29, 28, -1, 27, -1, -1, -1, -1, -1, -1],
+            [-1, -1, -1, -1, 32, -1, -1, -1, -1, -1, -1, -1, 26, -1, -1, -1, -1, -1],
+            [-1, -1, 34, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, 25, 24, -1, -1, -1],
+            [-1, 35, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 23, -1, -1],
+            [ 0, -1, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, -1, 22, -1],
+            [ 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 21, -1],
+            [-1, -1, -1, -1, -1, -1, 56, 55, 54, 53, -1, -1, -1, -1, -1, -1, -1, -1],
+            [ 2, -1, -1, -1, 58, 57, -1, -1, -1, -1, 52, 51, -1, -1, -1, -1, 20, -1],
+            [ 3, -1, 60, 59, -1, -1, -1, -1, -1, -1, -1, -1, 50, 49, -1, -1, 19, -1],
+            [ 4, -1, -1, -1, -1, -1, 64, 65, 66, 67, 68, -1, -1, -1, -1, -1, 18, -1],
+            [-1,  5, -1, 61, 62, 63, -1, -1, -1, -1, -1, 69, 70, 71, -1, 17, -1, -1],
+            [-1, -1,  6,  7, -1, -1, -1, -1, -1, -1, -1, -1, -1, 15, 16, -1, -1, -1],
+            [-1, -1, -1, -1,  8, -1, -1, -1, -1, -1, -1, -1, 14, -1, -1, -1, -1, -1],
+            [-1, -1, -1, -1, -1,  9, -1, 10, 11, 12, -1, 13, -1, -1, -1, -1, -1, -1]
+        ];
+
+        function buildGrid(width, height, retainValues = false) {
+            const gridContainer = document.getElementById('matrixGrid');
+            
+            // Backup old values if needed
+            const backup = {};
+            if (retainValues) {
+                gridCells.forEach(input => {
+                    const r = input.dataset.row;
+                    const c = input.dataset.col;
+                    backup[`${r}-${c}`] = input.value;
+                });
+            }
+
+            gridContainer.innerHTML = '';
+            gridContainer.style.gridTemplateColumns = `32px repeat(${width}, 1fr)`;
+            gridCells.length = 0;
+
+            // 1. Add Corner Header
+            const corner = document.createElement('div');
+            corner.className = 'grid-header-cell corner';
+            gridContainer.appendChild(corner);
+
+            // 2. Add Column Headers (0-based indices)
+            for (let c = 0; c < width; c++) {
+                const colHeader = document.createElement('div');
+                colHeader.className = 'grid-header-cell col-header';
+                colHeader.textContent = c;
+                gridContainer.appendChild(colHeader);
+            }
+
+            // 3. Add Rows (Row Header + Input Cells)
+            for (let r = 0; r < height; r++) {
+                const rowHeader = document.createElement('div');
+                rowHeader.className = 'grid-header-cell row-header';
+                rowHeader.textContent = r;
+                gridContainer.appendChild(rowHeader);
+
+                for (let c = 0; c < width; c++) {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell';
+
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `cell-${r}-${c}`;
+                    input.dataset.row = r;
+                    input.dataset.col = c;
+                    
+                    // Restore backup value or default to -1
+                    const backupVal = backup[`${r}-${c}`];
+                    input.value = (backupVal !== undefined) ? backupVal : -1;
+
+                    // Set pointer-events none so cell wrapper captures drag events
+                    input.style.pointerEvents = 'none';
+
+                    // Append first so parentElement is set before styling
+                    cellDiv.appendChild(input);
+                    
+                    // Update styling on load so restored cells are immediately colored
+                    updateCellStyling(input);
+
+                    // Drag and Drop support
+                    cellDiv.draggable = true;
+                    let dragCounter = 0;
+                    let shouldFocusOnMouseUp = false;
+
+                    cellDiv.addEventListener('dragstart', (e) => {
+                        shouldFocusOnMouseUp = false; // Cancel focus on drag start
+                        
+                        // If the dragged cell is not in the selection, clear selection and select only this cell
+                        if (!selectedCells.has(input.id)) {
+                            clearSelection();
+                            toggleCellSelection(input);
+                        }
+
+                        // Prepare multi-drag payload
+                        const payload = {
+                            originId: input.id,
+                            cells: []
+                        };
+
+                        selectedCells.forEach(id => {
+                            const selInput = document.getElementById(id);
+                            if (selInput) {
+                                payload.cells.push({
+                                    id: id,
+                                    r: parseInt(selInput.dataset.row),
+                                    c: parseInt(selInput.dataset.col),
+                                    val: selInput.value
+                                });
+                            }
+                        });
+
+                        e.dataTransfer.setData('application/json', JSON.stringify(payload));
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+
+                    cellDiv.addEventListener('dragenter', (e) => {
+                        dragCounter++;
+                        cellDiv.classList.add('drag-over');
+                    });
+
+                    cellDiv.addEventListener('dragleave', (e) => {
+                        dragCounter--;
+                        if (dragCounter === 0) {
+                            cellDiv.classList.remove('drag-over');
+                        }
+                    });
+
+                    cellDiv.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                    });
+
+                    cellDiv.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        dragCounter = 0;
+                        cellDiv.classList.remove('drag-over');
+
+                        try {
+                            const rawData = e.dataTransfer.getData('application/json');
+                            if (!rawData) return;
+
+                            const payload = JSON.parse(rawData);
+                            const originInput = document.getElementById(payload.originId);
+                            if (!originInput) return;
+
+                            const r_origin = parseInt(originInput.dataset.row);
+                            const c_origin = parseInt(originInput.dataset.col);
+
+                            const r_target = parseInt(input.dataset.row);
+                            const c_target = parseInt(input.dataset.col);
+
+                            const dr = r_target - r_origin;
+                            const dc = c_target - c_origin;
+
+                            // 1. Validate all target positions are in bounds
+                            let allValid = true;
+                            const moves = [];
+                            payload.cells.forEach(c => {
+                                const r_new = c.r + dr;
+                                const c_new = c.c + dc;
+                                if (r_new < 0 || r_new >= gridHeight || c_new < 0 || c_new >= gridWidth) {
+                                    allValid = false;
+                                } else {
+                                    moves.push({
+                                        sourceId: c.id,
+                                        targetId: `cell-${r_new}-${c_new}`,
+                                        val: c.val
+                                    });
+                                }
+                            });
+
+                            if (!allValid) {
+                                return; // Silent abort if any cell goes out of bounds
+                            }
+
+                            // Push undo state before the move
+                            pushState();
+
+                            // 2. Perform the Move
+                            // Clear old source cells first (if not being overwritten by a new value in the same move)
+                            const targetIdsSet = new Set(moves.map(m => m.targetId));
+                            payload.cells.forEach(c => {
+                                if (!targetIdsSet.has(c.id)) {
+                                    const srcEl = document.getElementById(c.id);
+                                    if (srcEl) {
+                                        srcEl.value = -1;
+                                        updateCellStyling(srcEl);
+                                    }
+                                }
+                            });
+
+                            // Write new values
+                            moves.forEach(m => {
+                                const tgtEl = document.getElementById(m.targetId);
+                                if (tgtEl) {
+                                    tgtEl.value = m.val;
+                                    updateCellStyling(tgtEl);
+                                }
+                            });
+
+                            clearSelection();
+                            generateCode();
+                        } catch (err) {
+                            console.error("Drop failed: ", err);
+                        }
+                    });
+
+                    // Disable dragging while focused so text selection works
+                    input.addEventListener('focus', () => {
+                        cellDiv.draggable = false;
+                        input.style.pointerEvents = 'auto';
+                        // Capture snapshot for undo stack before they edit
+                        focusStateBackup = getGridStateSnapshot();
+                    });
+                    
+                    input.addEventListener('blur', () => {
+                        cellDiv.draggable = true;
+                        input.style.pointerEvents = 'none';
+                    });
+
+                    // Mouse interactions for selection / deferred drag-focus
+                    cellDiv.addEventListener('mousedown', (e) => {
+                        if (document.activeElement === input) return;
+
+                        if (e.ctrlKey || e.metaKey) {
+                            toggleCellSelection(input);
+                            e.preventDefault();
+                        } else {
+                            if (selectedCells.has(input.id)) {
+                                shouldFocusOnMouseUp = true;
+                            } else {
+                                clearSelection();
+                                input.style.pointerEvents = 'auto';
+                                input.focus();
+                                input.select();
+                            }
+                        }
+                    });
+
+                    cellDiv.addEventListener('mouseup', (e) => {
+                        if (shouldFocusOnMouseUp) {
+                            clearSelection();
+                            input.style.pointerEvents = 'auto';
+                            input.focus();
+                            input.select();
+                            shouldFocusOnMouseUp = false;
+                        }
+                    });
+
+                    // Event Listeners for input change
+                    input.addEventListener('input', () => {
+                        if (focusStateBackup) {
+                            undoStack.push(focusStateBackup);
+                            if (undoStack.length > 50) undoStack.shift();
+                            focusStateBackup = null;
+                            updateUndoButtonUI();
+                        }
+                        updateCellStyling(input);
+                        generateCode();
+                    });
+                    
+                    input.addEventListener('keydown', handleKeyNavigation);
+
+                    gridContainer.appendChild(cellDiv);
+                    gridCells.push(input);
+                }
+            }
+
+            document.getElementById('statGridDim').textContent = `${width} × ${height}`;
+            generateCode();
+        }
+
+        // Triggered when width or height inputs change
+        function resizeGrid() {
+            const w = parseInt(document.getElementById('widthInput').value);
+            const h = parseInt(document.getElementById('heightInput').value);
+
+            if (isNaN(w) || w < 1) return;
+            if (isNaN(h) || h < 1) return;
+
+            pushState();
+            gridWidth = w;
+            gridHeight = h;
+
+            // Show/hide templates buttons if dimension is not 14x18
+            const btnSym = document.getElementById('btnSym');
+            const btnMirr = document.getElementById('btnMirr');
+            if (gridWidth === 18 && gridHeight === 14) {
+                btnSym.style.display = 'inline-flex';
+                btnMirr.style.display = 'inline-flex';
+            } else {
+                btnSym.style.display = 'none';
+                btnMirr.style.display = 'none';
+            }
+
+            buildGrid(gridWidth, gridHeight, true);
+        }
+
+        // Set colors and classes on cells based on input value
+        function updateCellStyling(input) {
+            const val = parseInt(input.value);
+            const parent = input.parentElement;
+            if (!parent) return;
+            
+            if (isNaN(val) || val < 0) {
+                parent.style.background = '';
+                parent.classList.remove('filled');
+            } else {
+                parent.classList.add('filled');
+                // Dynamic hue mapping based on index value
+                const hue = (val * 360 / 72) % 360;
+                parent.style.background = `hsl(${hue}, 75%, 28%)`;
+            }
+        }
+
+        // Handle Arrow key navigation
+        function handleKeyNavigation(e) {
+            const row = parseInt(this.dataset.row);
+            const col = parseInt(this.dataset.col);
+            let nextInput = null;
+
+            switch(e.key) {
+                case 'ArrowUp':
+                    nextInput = document.getElementById(`cell-${(row - 1 + gridHeight) % gridHeight}-${col}`);
+                    break;
+                case 'ArrowDown':
+                    nextInput = document.getElementById(`cell-${(row + 1) % gridHeight}-${col}`);
+                    break;
+                case 'ArrowLeft':
+                    nextInput = document.getElementById(`cell-${row}-${(col - 1 + gridWidth) % gridWidth}`);
+                    break;
+                case 'ArrowRight':
+                    nextInput = document.getElementById(`cell-${row}-${(col + 1) % gridWidth}`);
+                    break;
+                case 'Backspace':
+                    if (this.value === '') {
+                        this.value = -1;
+                        updateCellStyling(this);
+                        generateCode();
+                        e.preventDefault();
+                    }
+                    break;
+            }
+
+            if (nextInput) {
+                nextInput.focus();
+                nextInput.select();
+                e.preventDefault();
+            }
+        }
+
+        // Reset all grid inputs to -1
+        // Reset all grid inputs to -1
+        function clearGrid(shouldPush = true) {
+            if (shouldPush) pushState();
+            gridCells.forEach(input => {
+                input.value = -1;
+                updateCellStyling(input);
+            });
+            generateCode();
+        }
+
+        // Load pre-made templates
+        function loadDefaultTemplate(type) {
+            if (gridWidth !== 18 || gridHeight !== 14) {
+                alert('Dimensions must be 18x14 to load the default templates.');
+                return;
+            }
+
+            pushState();
+            clearGrid(false);
+            const template = type === 'symmetric' ? unmirroredTemplate : mirroredTemplate;
+
+            for (let r = 0; r < template.length; r++) {
+                for (let c = 0; c < template[r].length; c++) {
+                    const val = template[r][c];
+                    const input = document.getElementById(`cell-${r}-${c}`);
+                    if (input) {
+                        input.value = val;
+                        updateCellStyling(input);
+                    }
+                }
+            }
+            generateCode();
+        }
+
+        // Mirror the grid vertically in-place
+        function mirrorVertical() {
+            pushState();
+            const tempGrid = [];
+            for (let r = 0; r < gridHeight; r++) {
+                tempGrid[r] = [];
+                for (let c = 0; c < gridWidth; c++) {
+                    const input = document.getElementById(`cell-${r}-${c}`);
+                    tempGrid[r][c] = input.value;
+                }
+            }
+
+            // Write back in reverse row order
+            for (let r = 0; r < gridHeight; r++) {
+                const targetRow = gridHeight - 1 - r;
+                for (let c = 0; c < gridWidth; c++) {
+                    const input = document.getElementById(`cell-${targetRow}-${c}`);
+                    input.value = tempGrid[r][c];
+                    updateCellStyling(input);
+                }
+            }
+            generateCode();
+        }
+
+        // Generate matrix representations and perform validation
+        function generateCode() {
+            const matrix = [];
+            const ledCounts = {};
+            let mappedCount = 0;
+            let maxIndex = -1;
+            let duplicateFound = false;
+
+            // Clear duplicate animations
+            gridCells.forEach(c => c.parentElement.classList.remove('duplicate'));
+
+            // 1. Scan Grid & Find Counts
+            for (let r = 0; r < gridHeight; r++) {
+                matrix[r] = [];
+                for (let c = 0; c < gridWidth; c++) {
+                    const input = document.getElementById(`cell-${r}-${c}`);
+                    if (!input) continue;
+                    const val = parseInt(input.value);
+                    const parsedVal = isNaN(val) ? -1 : val;
+                    matrix[r][c] = parsedVal;
+
+                    if (parsedVal >= 0) {
+                        mappedCount++;
+                        if (parsedVal > maxIndex) {
+                            maxIndex = parsedVal;
+                        }
+                        ledCounts[parsedVal] = (ledCounts[parsedVal] || 0) + 1;
+                        if (ledCounts[parsedVal] > 1) {
+                            duplicateFound = true;
+                        }
+                    }
+                }
+            }
+
+            // 2. Animate Duplicate Cells
+            if (duplicateFound) {
+                for (let r = 0; r < gridHeight; r++) {
+                    for (let c = 0; c < gridWidth; c++) {
+                        const input = document.getElementById(`cell-${r}-${c}`);
+                        if (!input) continue;
+                        const val = parseInt(input.value);
+                        if (!isNaN(val) && val >= 0 && ledCounts[val] > 1) {
+                            input.parentElement.classList.add('duplicate');
+                        }
+                    }
+                }
+            }
+
+            // 3. Validation Checkpoint (Target LEDs is dynamically maxIndex + 1)
+            const targetVal = maxIndex >= 0 ? maxIndex + 1 : 0;
+            const statusPill = document.getElementById('validationStatus');
+            const warningText = document.getElementById('validationWarning');
+            const missingContainer = document.getElementById('missingContainer');
+            const missingIndicesSpan = document.getElementById('missingIndices');
+            const successBanner = document.getElementById('successBanner');
+            const successMaxSpan = document.getElementById('successMax');
+
+            // Find missing indices
+            const missing = [];
+            for (let i = 0; i < targetVal; i++) {
+                if (!ledCounts[i]) {
+                    missing.push(i);
+                }
+            }
+
+            document.getElementById('statMapped').textContent = `${mappedCount} / ${targetVal}`;
+            document.getElementById('statMaxIndex').textContent = maxIndex;
+
+            if (targetVal === 0) {
+                statusPill.textContent = 'All Valid';
+                statusPill.className = 'status-pill valid';
+                warningText.style.display = 'none';
+                successBanner.style.display = 'none';
+                missingContainer.style.display = 'none';
+            } else if (duplicateFound) {
+                statusPill.textContent = 'Duplicates Found';
+                statusPill.className = 'status-pill error';
+                warningText.style.display = 'block';
+                successBanner.style.display = 'none';
+            } else if (missing.length > 0) {
+                statusPill.textContent = 'Incomplete';
+                statusPill.className = 'status-pill error';
+                warningText.style.display = 'none';
+                successBanner.style.display = 'none';
+            } else {
+                statusPill.textContent = 'All Valid';
+                statusPill.className = 'status-pill valid';
+                warningText.style.display = 'none';
+                successBanner.style.display = 'block';
+                successMaxSpan.textContent = maxIndex;
+            }
+
+            // Show missing indices list
+            if (missing.length > 0) {
+                missingContainer.style.display = 'block';
+                if (missing.length > 25) {
+                    missingIndicesSpan.textContent = `${missing.slice(0, 25).join(', ')} ... and ${missing.length - 25} more`;
+                } else {
+                    missingIndicesSpan.textContent = missing.join(', ');
+                }
+            } else {
+                missingContainer.style.display = 'none';
+            }
+
+            // 4. Generate Python Code String
+            let pyStr = 'LED1_MATRIX = (\n';
+            matrix.forEach(row => {
+                const rowStr = row.map(v => v.toString().padStart(2, ' ')).join(', ');
+                pyStr += `    (${rowStr}),\n`;
+            });
+            pyStr += ')';
+            document.getElementById('pythonCode').textContent = pyStr;
+
+            // 5. Generate Hex String
+            let hexStr = '';
+            for (let r = 0; r < gridHeight; r++) {
+                for (let c = 0; c < gridWidth; c++) {
+                    const val = matrix[r][c];
+                    if (val === -1) {
+                        hexStr += 'ff';
+                    } else {
+                        const hexVal = val.toString(16).padStart(2, '0');
+                        hexStr += hexVal;
+                    }
+                }
+            }
+            document.getElementById('hexCode').textContent = hexStr;
+            saveToLocalStorage(); // Save progress automatically
+        }
+
+        // Copy Text utility with animations
+        function copyCode(elementId, btn) {
+            const codeEl = document.getElementById(elementId);
+            navigator.clipboard.writeText(codeEl.textContent).then(() => {
+                btn.textContent = 'Copied!';
+                btn.classList.add('success');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('success');
+                }, 1500);
+            }).catch(err => {
+                console.error('Copy failed: ', err);
+            });
+        }
+
+        // Multi-select management functions
+        function toggleCellSelection(input) {
+            const parent = input.parentElement;
+            if (selectedCells.has(input.id)) {
+                selectedCells.delete(input.id);
+                parent.classList.remove('selected');
+            } else {
+                selectedCells.add(input.id);
+                parent.classList.add('selected');
+            }
+            updateSelectionUI();
+        }
+
+        function clearSelection() {
+            selectedCells.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.parentElement.classList.remove('selected');
+            });
+            selectedCells.clear();
+            updateSelectionUI();
+        }
+
+        function updateSelectionUI() {
+            const btn = document.getElementById('btnClearSel');
+            if (btn) {
+                btn.style.display = selectedCells.size > 0 ? 'inline-flex' : 'none';
+            }
+        }
+
+        // Undo history state management
+        function getGridStateSnapshot() {
+            const state = [];
+            for (let r = 0; r < gridHeight; r++) {
+                state[r] = [];
+                for (let c = 0; c < gridWidth; c++) {
+                    const el = document.getElementById(`cell-${r}-${c}`);
+                    state[r][c] = el ? parseInt(el.value) : -1;
+                }
+            }
+            return {
+                width: gridWidth,
+                height: gridHeight,
+                matrix: state
+            };
+        }
+
+        function pushState() {
+            undoStack.push(getGridStateSnapshot());
+            if (undoStack.length > 50) {
+                undoStack.shift();
+            }
+            updateUndoButtonUI();
+        }
+
+        function undo() {
+            if (undoStack.length === 0) return;
+            const prevState = undoStack.pop();
+
+            // If dimensions changed, rebuild grid
+            if (prevState.width !== gridWidth || prevState.height !== gridHeight) {
+                gridWidth = prevState.width;
+                gridHeight = prevState.height;
+                document.getElementById('widthInput').value = gridWidth;
+                document.getElementById('heightInput').value = gridHeight;
+                buildGrid(gridWidth, gridHeight);
+            }
+
+            // Restore cell values
+            for (let r = 0; r < gridHeight; r++) {
+                for (let c = 0; c < gridWidth; c++) {
+                    const input = document.getElementById(`cell-${r}-${c}`);
+                    if (input) {
+                        input.value = prevState.matrix[r][c];
+                        updateCellStyling(input);
+                    }
+                }
+            }
+
+            clearSelection();
+            generateCode();
+            updateUndoButtonUI();
+        }
+
+        function updateUndoButtonUI() {
+            const btn = document.getElementById('btnUndo');
+            if (btn) {
+                btn.disabled = undoStack.length === 0;
+                btn.style.opacity = undoStack.length === 0 ? '0.4' : '1';
+            }
+        }
+
+        // Global hotkey binding (Ctrl+Z)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                undo();
+                e.preventDefault();
+            }
+        });
+
+        // LocalStorage save progress
+        function saveToLocalStorage() {
+            try {
+                const state = getGridStateSnapshot();
+                localStorage.setItem('cleds_matrix_state', JSON.stringify(state));
+            } catch (e) {
+                console.error("Failed to save state to localStorage: ", e);
+            }
+        }
+
+        // Parse Python nested tuple string to JS 2D array
+        function parsePythonTuple(text) {
+            // Remove comments
+            let s = text.replace(/#.*$/gm, '');
+            // Replace all parenthesis with square brackets
+            s = s.replace(/\(/g, '[').replace(/\)/g, ']');
+            // Remove assignment if any
+            s = s.replace(/^\s*[a-zA-Z0-9_]+\s*=\s*/, '');
+            // Clean trailing commas before closing brackets
+            s = s.replace(/,\s*(?=\])/g, '');
+            // Clean trailing commas at the end
+            s = s.trim().replace(/,$/, '');
+            
+            try {
+                const arr = JSON.parse(s);
+                if (Array.isArray(arr) && arr.length > 0 && Array.isArray(arr[0])) {
+                    return arr;
+                }
+            } catch (e) {
+                // Fallback: evaluate numbers row by row using regex matches
+                try {
+                    const matches = s.match(/\[\s*[^\[\]]+\s*\]/g);
+                    if (matches && matches.length > 0) {
+                        const matrix = matches.map(m => {
+                            const numbers = m.replace(/[\[\]\s]/g, '').split(',').filter(x => x !== '');
+                            return numbers.map(n => parseInt(n));
+                        });
+                        if (matrix.length > 0 && matrix[0].length > 0) {
+                            return matrix;
+                        }
+                    }
+                } catch (err) {
+                    console.error("Manual fallback parser failed: ", err);
+                }
+            }
+            return null;
+        }
+
+        // Import handler
+        function importFromText() {
+            const textarea = document.getElementById('importInput');
+            const text = textarea.value.trim();
+            
+            if (!text) {
+                showImportFeedback("Please paste a tuple first.", "var(--accent-red)");
+                return;
+            }
+
+            const matrix = parsePythonTuple(text);
+            if (!matrix) {
+                showImportFeedback("Invalid Python tuple format.", "var(--accent-red)");
+                return;
+            }
+
+            const h = matrix.length;
+            const w = matrix[0].length;
+
+            if (w < 1 || w > 50 || h < 1 || h > 50) {
+                showImportFeedback("Dimensions must be between 1x1 and 50x50.", "var(--accent-red)");
+                return;
+            }
+
+            // Save state to undo stack before overwriting
+            pushState();
+
+            gridWidth = w;
+            gridHeight = h;
+            
+            document.getElementById('widthInput').value = gridWidth;
+            document.getElementById('heightInput').value = gridHeight;
+
+            // Show/hide templates buttons if dimension is not 14x18
+            const btnSym = document.getElementById('btnSym');
+            const btnMirr = document.getElementById('btnMirr');
+            if (btnSym && btnMirr) {
+                if (gridWidth === 18 && gridHeight === 14) {
+                    btnSym.style.display = 'inline-flex';
+                    btnMirr.style.display = 'inline-flex';
+                } else {
+                    btnSym.style.display = 'none';
+                    btnMirr.style.display = 'none';
+                }
+            }
+
+            // Build grid without copying old values (retainValues = false)
+            buildGrid(gridWidth, gridHeight, false);
+
+            // Populate values
+            for (let r = 0; r < gridHeight; r++) {
+                for (let c = 0; c < gridWidth; c++) {
+                    const val = matrix[r][c];
+                    const input = document.getElementById(`cell-${r}-${c}`);
+                    if (input) {
+                        input.value = (val !== undefined) ? val : -1;
+                        updateCellStyling(input);
+                    }
+                }
+            }
+
+            generateCode();
+            showImportFeedback(`Imported ${w} × ${h} matrix!`, "var(--accent-green)");
+            textarea.value = '';
+        }
+
+        function showImportFeedback(msg, color) {
+            const feedback = document.getElementById('importFeedback');
+            if (feedback) {
+                feedback.textContent = msg;
+                feedback.style.color = color;
+                feedback.style.display = 'inline';
+                setTimeout(() => {
+                    feedback.style.display = 'none';
+                }, 4000);
+            }
+        }
+
+        window.onload = () => {
+            // Check if there is a saved state in localStorage
+            const saved = localStorage.getItem('cleds_matrix_state');
+            if (saved) {
+                try {
+                    const state = JSON.parse(saved);
+                    gridWidth = state.width;
+                    gridHeight = state.height;
+                    
+                    document.getElementById('widthInput').value = gridWidth;
+                    document.getElementById('heightInput').value = gridHeight;
+                    
+                    // Show/hide symmetric template buttons based on restored dimensions
+                    const btnSym = document.getElementById('btnSym');
+                    const btnMirr = document.getElementById('btnMirr');
+                    if (btnSym && btnMirr) {
+                        if (gridWidth === 18 && gridHeight === 14) {
+                            btnSym.style.display = 'inline-flex';
+                            btnMirr.style.display = 'inline-flex';
+                        } else {
+                            btnSym.style.display = 'none';
+                            btnMirr.style.display = 'none';
+                        }
+                    }
+                    
+                    buildGrid(gridWidth, gridHeight, false);
+                    
+                    for (let r = 0; r < gridHeight; r++) {
+                        for (let c = 0; c < gridWidth; c++) {
+                            const input = document.getElementById(`cell-${r}-${c}`);
+                            if (input) {
+                                input.value = state.matrix[r][c];
+                                updateCellStyling(input);
+                            }
+                        }
+                    }
+                    generateCode();
+                } catch (e) {
+                    console.error("Failed to load saved state from localStorage: ", e);
+                    buildGrid(gridWidth, gridHeight);
+                }
+            } else {
+                buildGrid(gridWidth, gridHeight);
+            }
+            
+            // Clear selection when clicking the empty area of the grid
+            document.getElementById('matrixGrid').addEventListener('mousedown', (e) => {
+                if (e.target === document.getElementById('matrixGrid')) {
+                    clearSelection();
+                }
+            });
+        };
+    </script>
+</body>
+</html>
