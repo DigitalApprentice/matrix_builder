@@ -6,7 +6,7 @@ The **Leds system Matrix Builder & Editor** (`matrix_builder.html`) is a browser
 
 ## The Concept of a Matrix Map
 
-When rendering 2D text or effects, code addresses pixels using `(x, y)` Cartesian coordinates. However, addressable LED strips (like WS2812B/NeoPixels) are wired sequentially: LED `0`, LED `1`, LED `2`, etc.
+When rendering 2D text or effects, code addresses pixels using `(x, y)` Cartesian coordinates. However, addressable LED strips (like WS2812B/WS2815) are wired sequentially: LED `0`, LED `1`, LED `2`, etc.
 
 The matrix map bridges this gap:
 - It is a 2D grid matching your display dimensions.
@@ -48,7 +48,7 @@ When the grid is configured to **18 columns** by **14 rows**, two special templa
 
 ## Validation Engine
 
-To prevent bugs on your ESP32, the builder runs real-time checks on the active matrix:
+To prevent bugs on your ESP32/RP2040, the builder runs real-time checks on the active matrix:
 1. **Duplicate Check**: Checks if any LED index (excluding `-1`) is used more than once.
 2. **Missing Check**: Determines the maximum index and checks if any intermediate integers are missing.
 3. **Status Pill**: Shows a color-coded status badge:
