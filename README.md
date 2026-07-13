@@ -1,6 +1,6 @@
-# CLeds Matrix Builder & Editor
+# Leds system Matrix Builder & Editor
 
-The **CLeds Matrix Builder & Editor** (`matrix_builder.html`) is a browser-based utility for designing and editing coordinate-to-LED index maps. It is essential when designing custom led displays, non-linear pixel geometries (like snake patterns or circles), or matrices with irregular layouts (gaps/empty spaces).
+The **Leds system Matrix Builder & Editor** (`matrix_builder.html`) is a browser-based utility for designing and editing coordinate-to-LED index maps. It is essential when designing custom led displays, non-linear pixel geometries (like snake patterns or circles), or matrices with irregular layouts (gaps/empty spaces).
 
 ---
 
