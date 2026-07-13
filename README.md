@@ -27,8 +27,6 @@ The matrix map bridges this gap:
 
 ### 1. Configure Dimensions
 In the top settings bar, set the **Width** and **Height** of your display grid, then click **Set Grid**.
-> [!WARNING]
-> Changing dimensions will clear the grid. If you want to keep old values, make sure you copy/export your data first.
 
 ### 2. Cell Selection & Hotkeys
 - **Single Cell**: Click in any cell and type an integer index (or `-1` for empty).
